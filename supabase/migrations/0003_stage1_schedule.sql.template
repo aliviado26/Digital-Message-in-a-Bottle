@@ -1,0 +1,27 @@
+-- Stage 1: schedule simulate-tick to run every 5 minutes via pg_cron + pg_net.
+--
+-- This is a TEMPLATE, not a migration to run as-is: it contains placeholders
+-- for your project URL and service role key. Copy the SQL below into the
+-- Supabase SQL Editor, substitute the two placeholders, and run it there.
+-- Do not commit your real service role key into this repo.
+
+create extension if not exists pg_cron with schema extensions;
+create extension if not exists pg_net with schema extensions;
+
+select cron.schedule(
+  'simulate-tick-every-5-minutes',
+  '*/5 * * * *',
+  $$
+  select net.http_post(
+    url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/simulate-tick',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY'
+    ),
+    body := '{}'::jsonb
+  );
+  $$
+);
+
+-- To stop it later:
+-- select cron.unschedule('simulate-tick-every-5-minutes');
