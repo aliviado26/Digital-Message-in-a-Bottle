@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const ONBOARDING_EXEMPT_PATHS = ["/onboarding", "/login", "/register", "/auth"];
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -26,7 +28,25 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Refreshes the auth token if needed; required for SSR session handling.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isExempt = ONBOARDING_EXEMPT_PATHS.some((path) =>
+    request.nextUrl.pathname.startsWith(path),
+  );
+
+  if (user && !isExempt) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("home_shore_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profile && !profile.home_shore_id) {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+  }
 
   return supabaseResponse;
 }
