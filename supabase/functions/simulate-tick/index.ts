@@ -15,6 +15,7 @@ interface Bottle {
   distance_km: number;
   last_ticked_at: string;
   origin_shore_id: string;
+  drift_origin_shore_id: string;
   sender_id: string;
   is_test: boolean;
 }
@@ -27,14 +28,15 @@ Deno.serve(async () => {
 
   const { data: shoreZones, error: shoreZonesError } = await supabase
     .from("shore_zones")
-    .select("id, slug, lat, lng, radius_km");
+    .select("id, slug, lat, lng, radius_km")
+    .limit(4000);
   if (shoreZonesError) {
     return Response.json({ error: shoreZonesError.message }, { status: 500 });
   }
 
   const { data: bottles, error: bottlesError } = await supabase
     .from("bottles")
-    .select("id, lat, lng, distance_km, last_ticked_at, origin_shore_id, sender_id, is_test")
+    .select("id, lat, lng, distance_km, last_ticked_at, origin_shore_id, drift_origin_shore_id, sender_id, is_test")
     .eq("status", "drifting");
   if (bottlesError) {
     return Response.json({ error: bottlesError.message }, { status: 500 });
@@ -55,10 +57,12 @@ Deno.serve(async () => {
     const newPosition = advancePosition(position, velocity, elapsedSeconds);
     const stepDistanceKm = haversineDistanceKm(position, newPosition);
 
-    // A bottle can't "arrive" at the shore it just launched from — exclude
-    // its own origin zone so release doesn't immediately count as beaching.
+    // A bottle can't "arrive" at the shore it just left — exclude the
+    // current drift leg's starting zone (origin on first release, or the
+    // rescuing shore after a re-drift) so departure doesn't immediately
+    // count as beaching/stranding again.
     const candidateZones = (shoreZones as ShoreZone[]).filter(
-      (zone) => zone.id !== bottle.origin_shore_id,
+      (zone) => zone.id !== (bottle.drift_origin_shore_id ?? bottle.origin_shore_id),
     );
     const reachedZone = findReachedShoreZone(newPosition, candidateZones);
     const onLand = reachedZone ? false : isOnLand(newPosition);
@@ -114,6 +118,12 @@ Deno.serve(async () => {
         bottle_id: bottle.id,
         lat: newPosition.lat,
         lng: newPosition.lng,
+      });
+      await supabase.from("bottle_events").insert({
+        bottle_id: bottle.id,
+        event_type: recipient ? "delivered" : "stranded",
+        shore_id: reachedZone.id,
+        actor_id: recipient?.id ?? null,
       });
       results.push({
         id: bottle.id,

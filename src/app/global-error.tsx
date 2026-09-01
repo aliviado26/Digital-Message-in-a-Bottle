@@ -9,10 +9,22 @@ export default function GlobalError({
 }) {
   return (
     <html lang="en">
-      <body className="flex min-h-screen flex-col items-center justify-center gap-4 p-16 text-center">
-        <h2 className="text-xl font-semibold">Something went wrong</h2>
-        <p className="text-sm text-zinc-500">{error.message}</p>
-        <button onClick={() => reset()} className="rounded bg-black px-4 py-2 text-white">
+      <body
+        className="flex min-h-screen flex-col items-center justify-center gap-4 p-16 text-center"
+        style={{ background: "#f3e8ce", color: "#2a2118" }}
+      >
+        <h2 style={{ fontSize: "1.25rem", fontWeight: 600 }}>Something went wrong</h2>
+        <p style={{ fontSize: "0.875rem", color: "#5c4e3c" }}>{error.message}</p>
+        <button
+          onClick={() => reset()}
+          style={{
+            borderRadius: "9999px",
+            background: "#1b3b4b",
+            color: "#f3e8ce",
+            padding: "0.5rem 1rem",
+            border: "none",
+          }}
+        >
           Try again
         </button>
       </body>

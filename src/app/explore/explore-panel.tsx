@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  ExploreMap,
-  type BottleMarker,
-  type ZoneMarker,
-  type CurrentArrow,
-} from "@/components/explore-map";
+  InkChartMap,
+  type ChartBottle,
+  type ChartZone,
+  type ChartArrow,
+} from "@/components/ink-chart-map";
 
 interface BottleSummary {
   id: string;
@@ -21,15 +21,21 @@ export function ExplorePanel({
   zones,
   bottles,
   arrows,
+  huntAvailable,
 }: {
-  zones: ZoneMarker[];
-  bottles: BottleMarker[];
-  arrows: CurrentArrow[];
+  zones: ChartZone[];
+  bottles: ChartBottle[];
+  arrows: ChartArrow[];
+  huntAvailable: boolean;
 }) {
   const [selected, setSelected] = useState<BottleSummary | null>(null);
   const [path, setPath] = useState<{ lat: number; lng: number }[]>([]);
+  const [rescueState, setRescueState] = useState<"idle" | "pending" | "done" | "error">("idle");
+  const [rescueMessage, setRescueMessage] = useState<string | null>(null);
 
   async function handleSelectBottle(bottleId: string) {
+    setRescueState("idle");
+    setRescueMessage(null);
     const supabase = createClient();
 
     const { data: bottle } = await supabase
@@ -70,33 +76,88 @@ export function ExplorePanel({
     setPath((positions ?? []).map((position) => ({ lat: position.lat, lng: position.lng })));
   }
 
+  async function handleRescue(bottleId: string) {
+    setRescueState("pending");
+    setRescueMessage(null);
+    const supabase = createClient();
+
+    const { data, error } = await supabase.rpc("rescue_bottle", {
+      p_bottle_id: bottleId,
+    });
+
+    if (error) {
+      setRescueState("error");
+      setRescueMessage(error.message);
+      return;
+    }
+
+    const fees = Array.isArray(data) ? data[0]?.fees : data?.fees;
+    setRescueState("done");
+    setRescueMessage(
+      fees != null
+        ? `Bottle sent back to drift. +1 Fee (now ${fees}).`
+        : "Bottle sent back to drift. +1 Fee.",
+    );
+    setSelected((prev) => (prev ? { ...prev, status: "drifting" } : prev));
+  }
+
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="flex-1">
-        <ExploreMap
+        <InkChartMap
           zones={zones}
           bottles={bottles}
           arrows={arrows}
           path={path}
           onSelectBottle={handleSelectBottle}
+          caption="Explorer chart"
         />
       </div>
-      <div className="w-full max-w-xs shrink-0 rounded border border-black/10 p-4 text-sm dark:border-white/20">
+      <div className="w-full max-w-xs shrink-0 rounded-2xl border border-line bg-surface p-5 text-sm shadow-sm">
         {selected ? (
           <div className="flex flex-col gap-2">
-            <h2 className="font-medium">
+            <h2 className="font-display font-medium">
               {selected.status === "stranded"
                 ? "🏝️ Something is lying on the shore..."
                 : `🍾 Unknown Bottle #${selected.id.slice(0, 8)}`}
             </h2>
-            <p>Status: {selected.status === "drifting" ? "🌊 Drifting" : "🏝️ Stranded"}</p>
-            <p>Age: {selected.ageDays} days</p>
-            <p>Distance travelled: {selected.distanceKm.toFixed(1)} km</p>
-            <p>Origin: {selected.originRegion ?? "Unknown"}</p>
-            <p className="font-medium">🔒 Message sealed</p>
+            <p className="font-mono text-xs text-ink-muted">
+              Status: {selected.status === "drifting" ? "🌊 Drifting" : "🏝️ Stranded"}
+            </p>
+            <p className="font-mono text-xs text-ink-muted">Age: {selected.ageDays} days</p>
+            <p className="font-mono text-xs text-ink-muted">
+              Distance travelled: {selected.distanceKm.toFixed(1)} km
+            </p>
+            <p className="font-mono text-xs text-ink-muted">Origin: {selected.originRegion ?? "Unknown"}</p>
+            <p className="mt-2 font-medium text-seal">🔒 Message sealed</p>
+
+            {selected.status === "stranded" && rescueState !== "done" && (
+              <div className="mt-3 flex flex-col gap-2 border-t border-line pt-3">
+                {huntAvailable ? (
+                  <button
+                    type="button"
+                    onClick={() => handleRescue(selected.id)}
+                    disabled={rescueState === "pending"}
+                    className="rounded-full bg-seal px-4 py-2 text-sm font-medium text-seal-contrast hover:opacity-90 disabled:opacity-50"
+                  >
+                    {rescueState === "pending" ? "Re-drifting…" : "Re-drift Bottle"}
+                  </button>
+                ) : (
+                  <p className="text-xs text-ink-muted">
+                    🔭 Stranded Hunt unlocks once 24 hours pass without receiving a bottle.
+                  </p>
+                )}
+                {rescueState === "error" && (
+                  <p className="text-xs text-seal">{rescueMessage}</p>
+                )}
+              </div>
+            )}
+            {rescueState === "done" && (
+              <p className="mt-3 border-t border-line pt-3 text-xs text-ocean">{rescueMessage}</p>
+            )}
           </div>
         ) : (
-          <p className="text-zinc-500">Click a bottle on the map to inspect it.</p>
+          <p className="text-ink-muted">Click a bottle on the map to inspect it.</p>
         )}
       </div>
     </div>

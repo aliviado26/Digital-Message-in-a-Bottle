@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { releaseBottle } from "./actions";
-import { OceanMap, type MapMarker } from "@/components/ocean-map";
+import { InkChartMap } from "@/components/ink-chart-map";
 
 export default async function OceanPage() {
   const supabase = await createClient();
@@ -16,7 +16,8 @@ export default async function OceanPage() {
   const { data: shoreZones } = await supabase
     .from("shore_zones")
     .select("id, name, lat, lng")
-    .order("name");
+    .order("name")
+    .limit(4000);
 
   const { data: bottles } = await supabase
     .from("bottles")
@@ -26,39 +27,21 @@ export default async function OceanPage() {
   const zones = shoreZones ?? [];
   const zoneById = new Map(zones.map((zone) => [zone.id, zone]));
 
-  const markers: MapMarker[] = [
-    ...zones.map((zone) => ({
-      id: `zone-${zone.id}`,
-      lat: zone.lat,
-      lng: zone.lng,
-      label: `Shore Zone: ${zone.name}`,
-      color: "#16a34a",
-    })),
-    ...(bottles ?? []).map((bottle) => ({
-      id: `bottle-${bottle.id}`,
-      lat: bottle.lat,
-      lng: bottle.lng,
-      label: `Bottle ${bottle.id.slice(0, 8)} — ${bottle.status}`,
-      color:
-        bottle.status === "drifting"
-          ? "#2563eb"
-          : bottle.status === "beached"
-            ? "#f59e0b"
-            : "#6b7280",
-    })),
-  ];
-
   return (
     <div className="flex flex-1 flex-col gap-6 p-8">
       <div>
-        <h1 className="text-2xl font-semibold">Ocean — Stage 1 Prototype</h1>
-        <p className="text-sm text-zinc-500">
+        <h1 className="font-display text-2xl font-semibold">Ocean — Stage 1 Prototype</h1>
+        <p className="text-sm text-ink-muted">
           Release a test bottle from a Shore Zone and watch it drift. A server-side tick
           advances every drifting bottle on a schedule, independent of this page being open.
         </p>
       </div>
 
-      <OceanMap markers={markers} />
+      <InkChartMap
+        zones={zones}
+        bottles={(bottles ?? []).map((bottle) => ({ id: bottle.id, lat: bottle.lat, lng: bottle.lng, status: bottle.status }))}
+        caption="Stage 1 prototype bottles"
+      />
 
       <form action={releaseBottle} className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-sm">
@@ -66,7 +49,7 @@ export default async function OceanPage() {
           <select
             name="shoreZoneId"
             required
-            className="rounded border border-black/10 px-3 py-2 dark:border-white/20"
+            className="rounded-lg border border-line bg-surface px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-ocean"
           >
             {zones.map((zone) => (
               <option key={zone.id} value={zone.id}>
@@ -77,7 +60,7 @@ export default async function OceanPage() {
         </label>
         <button
           type="submit"
-          className="rounded bg-black px-4 py-2 text-sm text-white dark:bg-white dark:text-black"
+          className="rounded-full bg-ocean px-4 py-2 text-sm text-ocean-contrast hover:opacity-90"
         >
           Release test bottle
         </button>
@@ -85,22 +68,24 @@ export default async function OceanPage() {
 
       <table className="w-full max-w-3xl text-left text-sm">
         <thead>
-          <tr className="text-zinc-500">
-            <th className="py-1 pr-4">Bottle</th>
-            <th className="py-1 pr-4">Origin</th>
-            <th className="py-1 pr-4">Status</th>
-            <th className="py-1 pr-4">Distance</th>
-            <th className="py-1 pr-4">Released</th>
+          <tr className="font-mono text-xs uppercase tracking-wide text-ink-muted">
+            <th className="py-1 pr-4 font-normal">Bottle</th>
+            <th className="py-1 pr-4 font-normal">Origin</th>
+            <th className="py-1 pr-4 font-normal">Status</th>
+            <th className="py-1 pr-4 font-normal">Distance</th>
+            <th className="py-1 pr-4 font-normal">Released</th>
           </tr>
         </thead>
         <tbody>
           {(bottles ?? []).map((bottle) => (
-            <tr key={bottle.id} className="border-t border-black/5 dark:border-white/10">
-              <td className="py-1 pr-4 font-mono">{bottle.id.slice(0, 8)}</td>
-              <td className="py-1 pr-4">{zoneById.get(bottle.origin_shore_id)?.name ?? "Unknown"}</td>
-              <td className="py-1 pr-4">{bottle.status}</td>
-              <td className="py-1 pr-4">{bottle.distance_km.toFixed(1)} km</td>
-              <td className="py-1 pr-4">{new Date(bottle.released_at).toLocaleString()}</td>
+            <tr key={bottle.id} className="border-t border-line">
+              <td className="py-2 pr-4 font-mono">{bottle.id.slice(0, 8)}</td>
+              <td className="py-2 pr-4">{zoneById.get(bottle.origin_shore_id)?.name ?? "Unknown"}</td>
+              <td className="py-2 pr-4">{bottle.status}</td>
+              <td className="py-2 pr-4 font-mono">{bottle.distance_km.toFixed(1)} km</td>
+              <td className="py-2 pr-4 font-mono text-ink-muted">
+                {new Date(bottle.released_at).toLocaleString()}
+              </td>
             </tr>
           ))}
         </tbody>

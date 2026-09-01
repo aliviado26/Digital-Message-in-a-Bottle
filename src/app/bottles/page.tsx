@@ -37,12 +37,12 @@ export default async function BottlesPage({
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-8">
-      <h1 className="text-2xl font-semibold">My Bottles</h1>
-      <p className="text-sm text-zinc-500">
-        You have {fees} {fees === 1 ? "Fee" : "Fees"}. Sending a bottle costs
-        1 Fee.
+      <h1 className="font-display text-2xl font-semibold">My Bottles</h1>
+      <p className="text-sm text-ink-muted">
+        You have <span className="font-mono">{fees}</span> {fees === 1 ? "Fee" : "Fees"}. Sending a
+        bottle costs 1 Fee.
       </p>
-      {params.error && <p className="text-sm text-red-600">{params.error}</p>}
+      {params.error && <p className="text-sm text-seal">{params.error}</p>}
 
       <form action={releaseBottle} className="flex max-w-lg flex-col gap-3">
         <textarea
@@ -51,12 +51,12 @@ export default async function BottlesPage({
           maxLength={1000}
           rows={5}
           placeholder="Write your message..."
-          className="rounded border border-black/10 px-3 py-2 dark:border-white/20"
+          className="rounded-lg border border-line bg-surface px-3 py-2 text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ocean"
         />
         <button
           type="submit"
           disabled={fees < 1}
-          className="self-start rounded bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
+          className="self-start rounded-full bg-ocean px-4 py-2 text-sm font-medium text-ocean-contrast disabled:opacity-40"
         >
           Seal and release
         </button>
@@ -64,24 +64,26 @@ export default async function BottlesPage({
 
       <table className="w-full max-w-3xl text-left text-sm">
         <thead>
-          <tr className="text-zinc-500">
-            <th className="py-1 pr-4">Bottle</th>
-            <th className="py-1 pr-4">Status</th>
-            <th className="py-1 pr-4">Distance</th>
-            <th className="py-1 pr-4">Released</th>
+          <tr className="font-mono text-xs uppercase tracking-wide text-ink-muted">
+            <th className="py-1 pr-4 font-normal">Bottle</th>
+            <th className="py-1 pr-4 font-normal">Status</th>
+            <th className="py-1 pr-4 font-normal">Distance</th>
+            <th className="py-1 pr-4 font-normal">Released</th>
           </tr>
         </thead>
         <tbody>
           {(bottles ?? []).map((bottle) => (
-            <tr key={bottle.id} className="border-t border-black/5 dark:border-white/10">
-              <td className="py-1 pr-4">
-                <Link href={`/bottles/${bottle.id}`} className="font-mono underline">
+            <tr key={bottle.id} className="border-t border-line">
+              <td className="py-2 pr-4">
+                <Link href={`/bottles/${bottle.id}`} className="font-mono text-seal underline underline-offset-2">
                   {bottle.id.slice(0, 8)}
                 </Link>
               </td>
-              <td className="py-1 pr-4">{bottle.status}</td>
-              <td className="py-1 pr-4">{bottle.distance_km.toFixed(1)} km</td>
-              <td className="py-1 pr-4">{new Date(bottle.released_at).toLocaleString()}</td>
+              <td className="py-2 pr-4">{bottle.status}</td>
+              <td className="py-2 pr-4 font-mono">{bottle.distance_km.toFixed(1)} km</td>
+              <td className="py-2 pr-4 font-mono text-ink-muted">
+                {new Date(bottle.released_at).toLocaleString()}
+              </td>
             </tr>
           ))}
         </tbody>

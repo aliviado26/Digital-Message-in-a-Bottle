@@ -26,8 +26,8 @@ export default async function MessagesPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-8">
-      <h1 className="text-2xl font-semibold">Messages</h1>
-      <p className="text-sm text-zinc-500">Bottles the ocean has delivered to you.</p>
+      <h1 className="font-display text-2xl font-semibold">Messages</h1>
+      <p className="text-sm text-ink-muted">Bottles the ocean has delivered to you.</p>
 
       <ul className="flex max-w-lg flex-col gap-3">
         {(bottles ?? []).map((bottle) => {
@@ -36,21 +36,23 @@ export default async function MessagesPage() {
           ) as ShoreZoneRegion | null;
 
           return (
-            <li key={bottle.id} className="rounded border border-black/10 p-4 dark:border-white/20">
+            <li
+              key={bottle.id}
+              className="rounded-xl border border-line bg-surface p-4 shadow-sm transition-colors hover:bg-surface-alt"
+            >
               <Link href={`/messages/${bottle.id}`} className="flex flex-col gap-1">
-                <span className="font-medium">
+                <span className="font-display font-medium">
                   {bottle.status === "read" ? "🍾 Opened bottle" : "🌊 Something washed ashore..."}
                 </span>
-                <span className="text-sm text-zinc-500">
-                  Origin: {origin?.region ?? "Unknown"} · Distance travelled:{" "}
-                  {bottle.distance_km.toFixed(1)} km
+                <span className="font-mono text-xs text-ink-muted">
+                  Origin: {origin?.region ?? "Unknown"} · {bottle.distance_km.toFixed(1)} km
                 </span>
               </Link>
             </li>
           );
         })}
         {(bottles ?? []).length === 0 && (
-          <p className="text-sm text-zinc-500">Nothing has reached you yet.</p>
+          <p className="text-sm text-ink-muted">Nothing has reached you yet.</p>
         )}
       </ul>
     </div>

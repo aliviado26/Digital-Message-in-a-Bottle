@@ -10,13 +10,13 @@ export default async function Home() {
   if (!user) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-16 text-center">
-        <h1 className="text-3xl font-semibold">Digital Message in a Bottle</h1>
-        <p className="max-w-md text-zinc-500">
+        <h1 className="font-display text-3xl font-semibold">Digital Message in a Bottle</h1>
+        <p className="max-w-md font-body text-lg italic text-ink-muted">
           Write something. Seal it. Throw it into the ocean. Then let go.
         </p>
         <Link
           href="/login"
-          className="rounded bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+          className="rounded-full bg-ocean px-4 py-2 text-sm font-medium text-ocean-contrast hover:opacity-90"
         >
           Log in / Register
         </Link>
@@ -36,30 +36,34 @@ export default async function Home() {
   const homeShoreName = Array.isArray(homeShore) ? homeShore[0]?.name : homeShore?.name;
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 p-16 text-center">
-      <h1 className="text-3xl font-semibold">Digital Message in a Bottle</h1>
-      <p className="max-w-md text-zinc-500">
-        Write something. Seal it. Throw it into the ocean. Then let go.
-      </p>
-      <dl className="grid grid-cols-3 gap-6 text-center">
+    <div className="flex flex-1 flex-col items-center justify-center gap-8 p-16 text-center">
+      <div className="flex flex-col items-center gap-3">
+        <h1 className="font-display text-3xl font-semibold">Digital Message in a Bottle</h1>
+        <p className="max-w-md font-body text-lg italic text-ink-muted">
+          Write something. Seal it. Throw it into the ocean. Then let go.
+        </p>
+      </div>
+
+      <dl className="grid w-full max-w-md grid-cols-3 gap-4 rounded-2xl border border-line bg-surface p-6 shadow-sm">
         <div>
-          <dt className="text-xs text-zinc-500">Fees</dt>
-          <dd className="text-xl font-semibold">{profile?.fees ?? 0}</dd>
+          <dt className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Fees</dt>
+          <dd className="mt-1 font-display text-2xl">{profile?.fees ?? 0}</dd>
         </div>
         <div>
-          <dt className="text-xs text-zinc-500">Home Shore</dt>
-          <dd className="text-xl font-semibold">{homeShoreName ?? "—"}</dd>
+          <dt className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Home Shore</dt>
+          <dd className="mt-1 font-display text-lg">{homeShoreName ?? "—"}</dd>
         </div>
         <div>
-          <dt className="text-xs text-zinc-500">Destination Progress</dt>
-          <dd className="text-xl font-semibold">{profile?.destination_progress ?? 0} / 5</dd>
+          <dt className="font-mono text-[11px] uppercase tracking-wide text-ink-muted">Progress</dt>
+          <dd className="mt-1 font-mono text-2xl">{profile?.destination_progress ?? 0} / 5</dd>
         </div>
       </dl>
+
       <div className="flex gap-3 text-sm font-medium">
-        <Link href="/bottles" className="rounded bg-black px-4 py-2 text-white dark:bg-white dark:text-black">
+        <Link href="/bottles" className="rounded-full bg-ocean px-4 py-2 text-ocean-contrast hover:opacity-90">
           Write a message
         </Link>
-        <Link href="/messages" className="rounded border border-black/10 px-4 py-2 dark:border-white/20">
+        <Link href="/messages" className="rounded-full border border-line px-4 py-2 text-ink hover:bg-surface-alt">
           Check Messages
         </Link>
       </div>

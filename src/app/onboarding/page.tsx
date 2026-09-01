@@ -31,32 +31,44 @@ export default async function OnboardingPage({
     .from("shore_zones")
     .select("id, name, region")
     .order("region")
-    .order("name");
+    .order("name")
+    .limit(4000);
+
+  const zonesByRegion = new Map<string, { id: string; name: string }[]>();
+  for (const zone of shoreZones ?? []) {
+    const region = zone.region ?? "Other";
+    if (!zonesByRegion.has(region)) zonesByRegion.set(region, []);
+    zonesByRegion.get(region)!.push({ id: zone.id, name: zone.name });
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 px-6 py-16">
-      <h1 className="text-2xl font-semibold">Choose your Home Shore</h1>
-      <p className="text-sm text-zinc-500">
+      <h1 className="font-display text-2xl font-semibold">Choose your Home Shore</h1>
+      <p className="text-sm text-ink-muted">
         This is where you&apos;ll naturally receive bottles. It doesn&apos;t
         determine where the bottles you send will go — the ocean decides
         that.
       </p>
-      {params.error && <p className="text-sm text-red-600">{params.error}</p>}
+      {params.error && <p className="text-sm text-seal">{params.error}</p>}
       <form action={chooseHomeShore} className="flex flex-col gap-3">
         <select
           name="shoreZoneId"
           required
-          className="rounded border border-black/10 px-3 py-2 dark:border-white/20"
+          className="rounded-lg border border-line bg-surface px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-ocean"
         >
-          {(shoreZones ?? []).map((zone) => (
-            <option key={zone.id} value={zone.id}>
-              {zone.region ? `${zone.name} — ${zone.region}` : zone.name}
-            </option>
+          {[...zonesByRegion.entries()].map(([region, zones]) => (
+            <optgroup key={region} label={region}>
+              {zones.map((zone) => (
+                <option key={zone.id} value={zone.id}>
+                  {zone.name}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
         <button
           type="submit"
-          className="rounded bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+          className="self-start rounded-full bg-ocean px-4 py-2 text-sm font-medium text-ocean-contrast hover:opacity-90"
         >
           Set as my Home Shore
         </button>

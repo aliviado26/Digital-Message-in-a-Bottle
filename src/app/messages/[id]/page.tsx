@@ -50,37 +50,45 @@ export default async function MessageDetailPage({
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-8">
-      <h1 className="text-2xl font-semibold">
-        {bottle.status === "read" ? "Opened bottle" : "Something washed ashore..."}
-      </h1>
-      <dl className="grid max-w-md grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-        <dt className="text-zinc-500">Age</dt>
-        <dd>{ageDays} days</dd>
-        <dt className="text-zinc-500">Distance travelled</dt>
-        <dd>{bottle.distance_km.toFixed(1)} km</dd>
-        <dt className="text-zinc-500">Origin</dt>
-        <dd>{origin?.region ?? "Unknown"}</dd>
-      </dl>
+      <div className="max-w-lg rounded-2xl border border-line bg-surface p-6 shadow-sm">
+        <h1 className="font-display text-xl font-semibold">
+          {bottle.status === "read" ? "Opened bottle" : "Something washed ashore..."}
+        </h1>
+        <dl className="mt-4 grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <dt className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Age</dt>
+            <dd className="mt-1 font-mono">{ageDays} days</dd>
+          </div>
+          <div>
+            <dt className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Distance</dt>
+            <dd className="mt-1 font-mono">{bottle.distance_km.toFixed(1)} km</dd>
+          </div>
+          <div>
+            <dt className="font-mono text-[10px] uppercase tracking-wide text-ink-muted">Origin</dt>
+            <dd className="mt-1">{origin?.region ?? "Unknown"}</dd>
+          </div>
+        </dl>
 
-      {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+        {actionError && <p className="mt-4 text-sm text-seal">{actionError}</p>}
 
-      {bottle.status === "read" ? (
-        <div className="max-w-lg whitespace-pre-wrap rounded border border-black/10 p-4 dark:border-white/20">
-          {bottle.message}
+        <div className="mt-5 border-t border-line pt-4">
+          {bottle.status === "read" ? (
+            <p className="whitespace-pre-wrap font-body italic">{bottle.message}</p>
+          ) : (
+            <form action={breakSeal}>
+              <input type="hidden" name="bottleId" value={bottle.id} />
+              <button
+                type="submit"
+                className="rounded-full bg-seal px-4 py-2 text-sm font-medium text-seal-contrast hover:opacity-90"
+              >
+                🔓 Break the Seal
+              </button>
+            </form>
+          )}
         </div>
-      ) : (
-        <form action={breakSeal}>
-          <input type="hidden" name="bottleId" value={bottle.id} />
-          <button
-            type="submit"
-            className="rounded bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
-          >
-            🔓 Break the Seal
-          </button>
-        </form>
-      )}
+      </div>
 
-      <details className="max-w-lg text-sm text-zinc-500">
+      <details className="max-w-lg text-sm text-ink-muted">
         <summary className="cursor-pointer">Report this message</summary>
         <form action={reportBottle} className="mt-2 flex flex-col gap-2">
           <input type="hidden" name="bottleId" value={bottle.id} />
@@ -89,9 +97,12 @@ export default async function MessageDetailPage({
             required
             rows={3}
             placeholder="Why are you reporting this?"
-            className="rounded border border-black/10 px-3 py-2 dark:border-white/20"
+            className="rounded-lg border border-line bg-surface px-3 py-2 text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ocean"
           />
-          <button type="submit" className="self-start rounded border border-red-600 px-3 py-1 text-red-600">
+          <button
+            type="submit"
+            className="self-start rounded-full border border-seal px-3 py-1 text-seal hover:bg-seal/10"
+          >
             Submit report
           </button>
         </form>
