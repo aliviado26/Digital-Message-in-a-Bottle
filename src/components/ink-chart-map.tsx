@@ -24,7 +24,7 @@ export interface ChartArrow extends LatLng {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  drifting: "var(--accent)",
+  drifting: "var(--map-drifter, var(--accent))",
   delivered: "var(--brass)",
   beached: "var(--brass)",
   stranded: "var(--seal)",
