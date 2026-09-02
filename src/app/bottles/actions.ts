@@ -16,6 +16,7 @@ export async function releaseBottle(formData: FormData) {
   }
 
   const message = formData.get("message") as string;
+  const returnTo = formData.get("returnTo") === "/" ? "/" : "/bottles";
 
   const { error } = await supabase.rpc("release_bottle", {
     p_message: message,
@@ -23,7 +24,7 @@ export async function releaseBottle(formData: FormData) {
 
   if (error) {
     logger.warn("Release failed", { error: error.message });
-    redirect(`/bottles?error=${encodeURIComponent(error.message)}`);
+    redirect(`${returnTo}?error=${encodeURIComponent(error.message)}${returnTo === "/" ? "#release" : ""}`);
   }
 
   revalidatePath("/bottles");

@@ -43,6 +43,30 @@ Deno.serve(async () => {
   }
 
   const now = new Date();
+
+  // Fast Current only ever scales how far a bottle moves this tick, never
+  // the elapsed time used for age (age is always now() - released_at,
+  // computed elsewhere, and never touches this function at all) or for
+  // last_ticked_at bookkeeping.
+  const { data: activeEvents } = await supabase
+    .from("ocean_events")
+    .select("id, multiplier")
+    .eq("event_type", "fast_current")
+    .lte("starts_at", now.toISOString())
+    .gte("ends_at", now.toISOString())
+    .limit(1);
+  const activeEvent = activeEvents?.[0] ?? null;
+  const globalMultiplier = activeEvent?.multiplier ?? 1;
+
+  // Personal Current Coin boosts stack multiplicatively with a global Fast
+  // Current -- same "scale movement, never age" rule, just scoped to one
+  // sender's own bottles instead of everyone's.
+  const { data: boostedProfiles } = await supabase
+    .from("profiles")
+    .select("id")
+    .gt("current_boost_until", now.toISOString());
+  const boostedSenderIds = new Set((boostedProfiles ?? []).map((p) => p.id));
+
   const results = [];
 
   for (const bottle of bottles as Bottle[]) {
@@ -52,10 +76,33 @@ Deno.serve(async () => {
       continue;
     }
 
+    const isBoosted = boostedSenderIds.has(bottle.sender_id);
+    const movementMultiplier = globalMultiplier * (isBoosted ? 2 : 1);
+
     const position = { lat: bottle.lat, lng: bottle.lng };
     const velocity = getCurrentVelocity(position);
-    const newPosition = advancePosition(position, velocity, elapsedSeconds);
+    const newPosition = advancePosition(position, velocity, elapsedSeconds * movementMultiplier);
     const stepDistanceKm = haversineDistanceKm(position, newPosition);
+
+    if (activeEvent) {
+      // Unique violation (23505) just means this bottle already logged
+      // this event on an earlier tick -- expected, not a real error.
+      const { error: fastCurrentError } = await supabase.from("bottle_events").insert({
+        bottle_id: bottle.id,
+        event_type: "fast_current",
+        ocean_event_id: activeEvent.id,
+      });
+      if (fastCurrentError && fastCurrentError.code !== "23505") {
+        console.error("Failed to log fast_current event", fastCurrentError);
+      }
+    }
+
+    if (isBoosted) {
+      await supabase.from("bottle_events").insert({
+        bottle_id: bottle.id,
+        event_type: "current_boost",
+      });
+    }
 
     // A bottle can't "arrive" at the shore it just left — exclude the
     // current drift leg's starting zone (origin on first release, or the

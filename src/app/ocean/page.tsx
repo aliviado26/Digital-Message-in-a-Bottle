@@ -13,19 +13,26 @@ export default async function OceanPage() {
     redirect("/login");
   }
 
-  const { data: shoreZones } = await supabase
-    .from("shore_zones")
-    .select("id, name, lat, lng")
-    .order("name")
-    .limit(4000);
+  const nowIso = new Date().toISOString();
 
-  const { data: bottles } = await supabase
-    .from("bottles")
-    .select("id, lat, lng, status, distance_km, released_at, origin_shore_id")
-    .order("released_at", { ascending: false });
+  const [{ data: shoreZones }, { data: bottles }, { data: activeFastCurrents }] = await Promise.all([
+    supabase.from("shore_zones").select("id, name, lat, lng").order("name").limit(4000),
+    supabase
+      .from("bottles")
+      .select("id, lat, lng, status, distance_km, released_at, origin_shore_id")
+      .order("released_at", { ascending: false }),
+    supabase
+      .from("ocean_events")
+      .select("ends_at")
+      .eq("event_type", "fast_current")
+      .lte("starts_at", nowIso)
+      .gte("ends_at", nowIso)
+      .limit(1),
+  ]);
 
   const zones = shoreZones ?? [];
   const zoneById = new Map(zones.map((zone) => [zone.id, zone]));
+  const activeFastCurrent = activeFastCurrents?.[0] ?? null;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-8">
@@ -36,6 +43,13 @@ export default async function OceanPage() {
           advances every drifting bottle on a schedule, independent of this page being open.
         </p>
       </div>
+
+      {activeFastCurrent && (
+        <p className="rounded-lg border border-brass/40 bg-brass/10 px-4 py-2 text-sm text-brass">
+          ⚡ FAST CURRENT — movement is 2× until{" "}
+          {new Date(activeFastCurrent.ends_at).toLocaleString()}. Bottle age is unaffected.
+        </p>
+      )}
 
       <InkChartMap
         zones={zones}

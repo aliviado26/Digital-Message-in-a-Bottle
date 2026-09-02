@@ -41,7 +41,7 @@ export default async function BottleDetailPage({
 
   const { data: events } = await supabase
     .from("bottle_events")
-    .select("event_type, occurred_at, shore:shore_zones(name)")
+    .select("event_type, occurred_at, shore:shore_zones(name), ocean_event:ocean_events(starts_at, ends_at)")
     .eq("bottle_id", id)
     .order("occurred_at", { ascending: true });
 
@@ -52,6 +52,8 @@ export default async function BottleDetailPage({
     rescued: "🔭 Found by an explorer",
     redrifted: "🌊 Re-drifted",
     read: "🔓 Seal broken",
+    fast_current: "⚡ Fast Current experienced",
+    current_boost: "⚡ Current Coin boost used",
   };
 
   const originShore = (
@@ -105,10 +107,15 @@ export default async function BottleDetailPage({
             const shore = (
               Array.isArray(event.shore) ? event.shore[0] : event.shore
             ) as ShoreZoneName | null;
+            const oceanEvent = (
+              Array.isArray(event.ocean_event) ? event.ocean_event[0] : event.ocean_event
+            ) as { starts_at: string; ends_at: string } | null;
             return (
               <li key={index} className="flex items-baseline gap-2">
                 <span className="font-mono text-[11px] text-ink-muted">
-                  {new Date(event.occurred_at).toLocaleDateString()}
+                  {oceanEvent
+                    ? `${new Date(oceanEvent.starts_at).toLocaleDateString()} – ${new Date(oceanEvent.ends_at).toLocaleDateString()}`
+                    : new Date(event.occurred_at).toLocaleDateString()}
                 </span>
                 <span>
                   {EVENT_LABELS[event.event_type] ?? event.event_type}

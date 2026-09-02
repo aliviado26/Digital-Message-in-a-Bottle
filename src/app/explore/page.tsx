@@ -26,28 +26,37 @@ export default async function ExplorePage() {
     redirect("/login");
   }
 
-  const { data: zones } = await supabase
-    .from("shore_zones")
-    .select("id, name, lat, lng")
-    .limit(4000);
-
-  const { data: bottles } = await supabase
-    .from("explorable_bottles")
-    .select("id, status, lat, lng, distance_km, released_at, origin_shore_id");
-
   const arrows = buildArrowGrid();
 
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
-  const { data: recentDelivery } = await supabase
-    .from("bottle_events")
-    .select("occurred_at, bottles!inner(recipient_id)")
-    .eq("event_type", "delivered")
-    .eq("bottles.recipient_id", user.id)
-    .gte("occurred_at", oneDayAgo)
-    .limit(1);
+  const nowIso = new Date(now).toISOString();
+
+  const [{ data: zones }, { data: bottles }, { data: recentDelivery }, { data: activeFastCurrents }] =
+    await Promise.all([
+      supabase.from("shore_zones").select("id, name, lat, lng").limit(4000),
+      supabase
+        .from("explorable_bottles")
+        .select("id, status, lat, lng, distance_km, released_at, origin_shore_id"),
+      supabase
+        .from("bottle_events")
+        .select("occurred_at, bottles!inner(recipient_id)")
+        .eq("event_type", "delivered")
+        .eq("bottles.recipient_id", user.id)
+        .gte("occurred_at", oneDayAgo)
+        .limit(1),
+      supabase
+        .from("ocean_events")
+        .select("ends_at")
+        .eq("event_type", "fast_current")
+        .lte("starts_at", nowIso)
+        .gte("ends_at", nowIso)
+        .limit(1),
+    ]);
+
   const huntAvailable = !recentDelivery || recentDelivery.length === 0;
+  const activeFastCurrent = activeFastCurrents?.[0] ?? null;
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-8">
@@ -64,6 +73,12 @@ export default async function ExplorePage() {
       ) : (
         <p className="rounded-lg border border-line bg-surface-alt px-4 py-2 text-sm text-ink-muted">
           🔭 Stranded Hunt unlocks once 24 hours pass without receiving a bottle.
+        </p>
+      )}
+      {activeFastCurrent && (
+        <p className="rounded-lg border border-brass/40 bg-brass/10 px-4 py-2 text-sm text-brass">
+          ⚡ FAST CURRENT — movement is 2× until{" "}
+          {new Date(activeFastCurrent.ends_at).toLocaleString()}. Bottle age is unaffected.
         </p>
       )}
       <ExplorePanel
