@@ -8,6 +8,14 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     globals: true,
+    // e2e/ holds Playwright specs (run via `pnpm test:e2e`), not Vitest's --
+    // without this, Vitest's default glob also matches "*.spec.ts" there.
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.{idea,git,cache,output,temp}/**",
+      "e2e/**",
+    ],
   },
   resolve: {
     alias: {
